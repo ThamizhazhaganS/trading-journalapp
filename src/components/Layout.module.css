@@ -1,0 +1,198 @@
+/* Global Layout */
+.appContainer {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    padding-bottom: 74px;
+    /* Space for mobile bottom nav */
+    background: var(--bg-app);
+}
+
+.main {
+    flex: 1;
+    width: 100%;
+    margin: 0 auto;
+    padding: 1.5rem;
+    max-width: 1600px;
+    animation: fadeIn 0.3s ease-out;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* --- Mobile Header --- */
+.header {
+    padding: 0.75rem 1.25rem;
+    background: rgba(18, 18, 18, 0.85);
+    /* Glassmorphism */
+    backdrop-filter: blur(12px);
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.logo {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.logo h1 {
+    font-size: 1.1rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    color: var(--text-primary);
+}
+
+.logoIcon {
+    color: var(--accent-primary);
+    font-size: 1.25rem;
+    filter: drop-shadow(0 0 8px rgba(37, 99, 235, 0.4));
+}
+
+/* --- Navigation --- */
+.bottomNav {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 70px;
+    background: #0f1115;
+    /* Deeper dark for contrast */
+    border-top: 1px solid var(--border);
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    z-index: 100;
+    padding-bottom: env(safe-area-inset-bottom);
+    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.3);
+}
+
+.sidebarHeader {
+    display: none;
+    /* Hidden on mobile */
+}
+
+.navItem {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    color: var(--text-muted);
+    font-size: 0.7rem;
+    text-decoration: none;
+    width: 100%;
+    height: 100%;
+    transition: all 0.2s ease;
+    border-radius: 8px;
+    /* For desktop hover mainly */
+}
+
+.navItem span {
+    font-weight: 500;
+}
+
+.active {
+    color: var(--accent-primary);
+}
+
+.active svg {
+    filter: drop-shadow(0 0 5px var(--accent-primary));
+}
+
+/* --- Desktop Styles (Sidebar) --- */
+@media (min-width: 1024px) {
+    .appContainer {
+        flex-direction: row;
+        /* Side-by-side layout */
+        padding-bottom: 0;
+    }
+
+    .header {
+        display: none;
+        /* Use sidebar header instead */
+    }
+
+    .sidebarHeader {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 0 0 2rem 0.75rem;
+        margin-bottom: 1rem;
+    }
+
+    .sidebarHeader h1 {
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: #fff;
+        background: linear-gradient(to right, #fff, #9ca3af);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+    }
+
+    .bottomNav {
+        /* Becomes Sidebar */
+        position: sticky;
+        top: 0;
+        left: 0;
+        width: 260px;
+        height: 100vh;
+        flex-direction: column;
+        justify-content: flex-start;
+        align-items: stretch;
+        padding: 2rem 1.5rem;
+        border-right: 1px solid var(--border);
+        border-top: none;
+        background: #0b0c0e;
+        /* Slightly darker sidebar */
+        box-shadow: 5px 0 30px rgba(0, 0, 0, 0.2);
+    }
+
+    .navItem {
+        flex-direction: row;
+        justify-content: flex-start;
+        height: 48px;
+        padding: 0 1rem;
+        margin-bottom: 0.5rem;
+        gap: 12px;
+        font-size: 0.95rem;
+        color: #94a3b8;
+        border-radius: 8px;
+    }
+
+    .navItem:hover {
+        background: rgba(255, 255, 255, 0.04);
+        color: #f1f5f9;
+        transform: translateX(4px);
+    }
+
+    .navItem.active {
+        background: rgba(37, 99, 235, 0.15);
+        /* Subtle accent bg */
+        color: #3b82f6;
+        border-left: 3px solid #3b82f6;
+        border-radius: 0 8px 8px 0;
+        /* Only round right side */
+    }
+
+    .main {
+        padding: 2.5rem 3rem;
+        /* More breathing room on desktop */
+        max-width: 100%;
+        /* Let it fill flex space */
+    }
+}
