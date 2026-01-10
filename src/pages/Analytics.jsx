@@ -1,9 +1,20 @@
+import { useState } from 'react';
 import { useTrades } from '../context/TradeContext';
-import { AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
+import { AreaChart, Area, BarChart, Bar, LineChart, Line, ComposedChart, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, Legend } from 'recharts';
 import styles from './Analytics.module.css';
 
 export default function Analytics() {
     const { trades } = useTrades();
+    const [chartType, setChartType] = useState('area');
+
+    // Custom small tooltip style
+    const tooltipStyle = {
+        backgroundColor: '#181b21',
+        border: '1px solid #2d313a',
+        borderRadius: '4px',
+        padding: '4px 8px',
+        fontSize: '11px'
+    };
 
     // Calculate cumulative equity curve
     const data = trades
@@ -107,25 +118,88 @@ export default function Analytics() {
 
                 {/* 2. Equity Curve */}
                 <div className={styles.chartCard}>
-                    <h3>Equity Curve</h3>
+                    <div className={styles.cardHeaderRow}>
+                        <h3>Equity Curve</h3>
+                        <select
+                            className={styles.chartSelect}
+                            value={chartType}
+                            onChange={(e) => setChartType(e.target.value)}
+                        >
+                            <option value="area">Area (Curve)</option>
+                            <option value="step">Step Line</option>
+                            <option value="bar">Bar (PnL)</option>
+                            <option value="composed">Bar + Line</option>
+                            <option value="line">Line (Simple)</option>
+                        </select>
+                    </div>
                     <div className={styles.chartContainer}>
                         <ResponsiveContainer width="100%" height="100%">
-                            <AreaChart data={data}>
-                                <defs>
-                                    <linearGradient id="colorEquity" x1="0" y1="0" x2="0" y2="1">
-                                        <stop offset="5%" stopColor="#2563eb" stopOpacity={0.3} />
-                                        <stop offset="95%" stopColor="#2563eb" stopOpacity={0} />
-                                    </linearGradient>
-                                </defs>
-                                <CartesianGrid strokeDasharray="3 3" stroke="#2d313a" />
-                                <XAxis dataKey="date" stroke="#9ca3af" fontSize={12} tickFormatter={(str) => str.split(',')[0]} />
-                                <YAxis stroke="#9ca3af" fontSize={12} />
-                                <Tooltip
-                                    contentStyle={{ backgroundColor: '#181b21', border: '1px solid #2d313a', borderRadius: '8px' }}
-                                    itemStyle={{ color: '#ededed' }}
-                                />
-                                <Area type="monotone" dataKey="equity" stroke="#2563eb" fillOpacity={1} fill="url(#colorEquity)" />
-                            </AreaChart>
+                            {chartType === 'area' && (
+                                <AreaChart data={data}>
+                                    <defs>
+                                        <linearGradient id="colorEquity" x1="0" y1="0" x2="0" y2="1">
+                                            <stop offset="5%" stopColor="#2563eb" stopOpacity={0.3} />
+                                            <stop offset="95%" stopColor="#2563eb" stopOpacity={0} />
+                                        </linearGradient>
+                                    </defs>
+                                    <CartesianGrid strokeDasharray="3 3" stroke="#2d313a" />
+                                    <XAxis dataKey="date" stroke="#9ca3af" fontSize={12} tickFormatter={(str) => str.split(',')[0]} />
+                                    <YAxis stroke="#9ca3af" fontSize={12} domain={['auto', 'auto']} />
+                                    <Tooltip contentStyle={tooltipStyle} itemStyle={{ color: '#ededed' }} />
+                                    <Area type="monotone" dataKey="equity" stroke="#2563eb" fillOpacity={1} fill="url(#colorEquity)" />
+                                </AreaChart>
+                            )}
+
+                            {chartType === 'line' && (
+                                <LineChart data={data}>
+                                    <CartesianGrid strokeDasharray="3 3" stroke="#2d313a" />
+                                    <XAxis dataKey="date" stroke="#9ca3af" fontSize={12} tickFormatter={(str) => str.split(',')[0]} />
+                                    <YAxis stroke="#9ca3af" fontSize={12} domain={['auto', 'auto']} />
+                                    <Tooltip contentStyle={tooltipStyle} itemStyle={{ color: '#ededed' }} />
+                                    <Line type="monotone" dataKey="equity" stroke="#2563eb" strokeWidth={2} dot={false} />
+                                </LineChart>
+                            )}
+
+                            {chartType === 'step' && (
+                                <LineChart data={data}>
+                                    <CartesianGrid strokeDasharray="3 3" stroke="#2d313a" />
+                                    <XAxis dataKey="date" stroke="#9ca3af" fontSize={12} tickFormatter={(str) => str.split(',')[0]} />
+                                    <YAxis stroke="#9ca3af" fontSize={12} domain={['auto', 'auto']} />
+                                    <Tooltip contentStyle={tooltipStyle} itemStyle={{ color: '#ededed' }} />
+                                    <Line type="stepAfter" dataKey="equity" stroke="#10b981" strokeWidth={2} dot={false} />
+                                </LineChart>
+                            )}
+
+                            {chartType === 'bar' && (
+                                <BarChart data={data}>
+                                    <CartesianGrid strokeDasharray="3 3" stroke="#2d313a" />
+                                    <XAxis dataKey="date" stroke="#9ca3af" fontSize={12} tickFormatter={(str) => str.split(',')[0]} />
+                                    <YAxis stroke="#9ca3af" fontSize={12} />
+                                    <Tooltip contentStyle={tooltipStyle} itemStyle={{ color: '#ededed' }} />
+                                    <Bar dataKey="pnl" radius={[4, 4, 0, 0]}>
+                                        {data.map((entry, index) => (
+                                            <Cell key={`cell-${index}`} fill={entry.pnl >= 0 ? '#10b981' : '#ef4444'} />
+                                        ))}
+                                    </Bar>
+                                </BarChart>
+                            )}
+
+                            {chartType === 'composed' && (
+                                <ComposedChart data={data}>
+                                    <CartesianGrid strokeDasharray="3 3" stroke="#2d313a" />
+                                    <XAxis dataKey="date" stroke="#9ca3af" fontSize={12} />
+                                    <YAxis yAxisId="left" stroke="#9ca3af" fontSize={12} domain={['auto', 'auto']} />
+                                    <YAxis yAxisId="right" orientation="right" stroke="#9ca3af" fontSize={12} />
+                                    <Tooltip contentStyle={tooltipStyle} itemStyle={{ color: '#ededed' }} />
+                                    <Legend />
+                                    <Area yAxisId="left" type="monotone" dataKey="equity" fill="rgba(37, 99, 235, 0.1)" stroke="#2563eb" />
+                                    <Bar yAxisId="right" dataKey="pnl" barSize={20}>
+                                        {data.map((entry, index) => (
+                                            <Cell key={`cell-${index}`} fill={entry.pnl >= 0 ? '#10b981' : '#ef4444'} />
+                                        ))}
+                                    </Bar>
+                                </ComposedChart>
+                            )}
                         </ResponsiveContainer>
                     </div>
                 </div>
@@ -141,7 +215,7 @@ export default function Analytics() {
                                 <CartesianGrid strokeDasharray="3 3" stroke="#2d313a" />
                                 <XAxis type="number" stroke="#9ca3af" fontSize={12} />
                                 <YAxis dataKey="name" type="category" width={100} stroke="#9ca3af" fontSize={12} />
-                                <Tooltip cursor={{ fill: 'transparent' }} contentStyle={{ backgroundColor: '#181b21', border: '1px solid #2d313a' }} />
+                                <Tooltip cursor={{ fill: 'transparent' }} contentStyle={tooltipStyle} itemStyle={{ color: '#ededed' }} />
                                 <Bar dataKey="pnl" radius={[0, 4, 4, 0]}>
                                     {strategyData.map((entry, index) => (
                                         <Cell key={`cell-${index}`} fill={entry.pnl >= 0 ? '#10b981' : '#ef4444'} />
@@ -161,7 +235,7 @@ export default function Analytics() {
                                 <CartesianGrid strokeDasharray="3 3" stroke="#2d313a" />
                                 <XAxis dataKey="name" stroke="#9ca3af" fontSize={12} />
                                 <YAxis stroke="#9ca3af" fontSize={12} />
-                                <Tooltip cursor={{ fill: 'transparent' }} contentStyle={{ backgroundColor: '#181b21', border: '1px solid #2d313a' }} />
+                                <Tooltip cursor={{ fill: 'transparent' }} contentStyle={tooltipStyle} itemStyle={{ color: '#ededed' }} />
                                 <Bar dataKey="pnl" radius={[4, 4, 4, 4]}>
                                     {emotionData.map((entry, index) => (
                                         <Cell key={`cell-${index}`} fill={entry.pnl >= 0 ? '#10b981' : '#ef4444'} />
