@@ -2,22 +2,28 @@
     height: 100%;
     display: flex;
     flex-direction: column;
-    gap: 1rem;
+    gap: 0.75rem;
     overflow: hidden;
-    /* Prevent page scrolling */
 }
 
 .header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding-bottom: 1rem;
+    padding: 0 0.5rem 0.5rem 0.5rem;
     border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
 }
 
 .header h2 {
-    font-size: 1.5rem;
+    font-size: 1.25rem;
     font-weight: 700;
+}
+
+.controls {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
 }
 
 .searchBar {
@@ -27,7 +33,7 @@
     border: 1px solid var(--border);
     border-radius: 8px;
     padding: 0.25rem 0.5rem;
-    width: 300px;
+    width: 250px;
 }
 
 .searchIcon {
@@ -39,43 +45,270 @@
     background: transparent;
     border: none;
     color: var(--text-primary);
-    padding: 0.5rem;
+    padding: 0.4rem;
     flex: 1;
     outline: none;
+    font-size: 0.9rem;
 }
 
-.searchBar button {
-    background: var(--accent-primary);
-    border: none;
-    color: white;
+.actionBtn {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    color: var(--text-secondary);
     padding: 0.4rem 0.8rem;
-    border-radius: 4px;
+    border-radius: 6px;
     font-size: 0.8rem;
     cursor: pointer;
     font-weight: 500;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
 }
 
-.chartContainer {
+.actionBtn:hover,
+.activeBtn {
+    border-color: var(--accent-primary);
+    color: var(--text-primary);
+    background: rgba(37, 99, 235, 0.1);
+}
+
+/* --- Main Layout Grid --- */
+.marketGrid {
+    display: flex;
     flex: 1;
+    gap: 0.75rem;
+    min-height: 0;
+    /* Important for scroll */
+    overflow: hidden;
+}
+
+/* Sidebar: Watchlist */
+.watchlistPanel {
+    width: 240px;
+    flex-shrink: 0;
     background: var(--bg-card);
     border: 1px solid var(--border);
-    border-radius: 12px;
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
     overflow: hidden;
-    /* Ensure it doesn't grow indefinitely */
-    min-height: 0;
+}
+
+.panelHeader {
+    padding: 0.75rem;
+    border-bottom: 1px solid var(--border);
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    color: var(--text-secondary);
+    font-weight: 600;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.count {
+    background: var(--bg-app);
+    color: var(--text-secondary);
+    padding: 1px 6px;
+    border-radius: 4px;
+    font-size: 0.75rem;
+}
+
+.quickAddForm {
+    display: flex;
+    padding: 0.5rem;
+    border-bottom: 1px solid var(--border);
+    gap: 0.5rem;
+    background: rgba(255, 255, 255, 0.01);
+}
+
+.quickAddForm input {
+    flex: 1;
+    background: transparent;
+    border: 1px solid transparent;
+    border-bottom-color: var(--border);
+    color: var(--text-primary);
+    font-size: 0.8rem;
+    padding: 0.25rem;
+    outline: none;
+}
+
+.quickAddForm input:focus {
+    border-bottom-color: var(--accent-primary);
+}
+
+.quickAddForm button {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text-secondary);
+    border-radius: 4px;
+    padding: 4px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.quickAddForm button:hover {
+    color: var(--accent-primary);
+    border-color: var(--accent-primary);
+    background: rgba(37, 99, 235, 0.1);
+}
+
+.symbolList {
+    flex: 1;
+    overflow-y: auto;
     display: flex;
     flex-direction: column;
 }
 
-/* Mobile specific */
-@media (max-width: 768px) {
-    .header {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 1rem;
-    }
+.symbolItem {
+    padding: 0.75rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+    transition: background-color 0.1s;
+}
 
-    .searchBar {
-        width: 100%;
+.symbolItem:hover {
+    background: var(--bg-card-hover);
+}
+
+.symbolActive {
+    background: rgba(37, 99, 235, 0.15);
+    border-left: 3px solid var(--accent-primary);
+}
+
+.symbolName {
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: var(--text-primary);
+}
+
+.itemMain {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.itemData {
+    display: flex;
+    gap: 0.5rem;
+    font-size: 0.75rem;
+    align-items: center;
+}
+
+.price {
+    font-family: 'Roboto Mono', monospace;
+    font-weight: 500;
+    color: var(--text-primary);
+}
+
+.change {
+    font-weight: 600;
+}
+
+.removeBtn {
+    opacity: 0;
+    background: transparent;
+    border: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    padding: 2px;
+}
+
+.symbolItem:hover .removeBtn {
+    opacity: 1;
+}
+
+.removeBtn:hover {
+    color: var(--danger);
+}
+
+
+/* Center: Charts */
+.mainChartArea {
+    flex: 1;
+    /* Takes main space */
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    min-width: 0;
+}
+
+.chartCard {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+    flex: 1;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Split View Styles */
+
+
+
+/* Right: News / Data */
+.infoPanel {
+    width: 280px;
+    flex-shrink: 0;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+
+/* Full Screen Mode adjustments */
+.fullScreenMode {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: 9999;
+    padding: 0;
+    background: var(--bg-app);
+}
+
+.fullScreenMode .marketGrid {
+    gap: 0;
+}
+
+.exitFullScreenBtn {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    background: rgba(0, 0, 0, 0.6);
+    color: white;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 8px;
+    padding: 0.5rem;
+    cursor: pointer;
+    z-index: 50;
+    transition: all 0.2s;
+}
+
+.exitFullScreenBtn:hover {
+    background: var(--accent-primary);
+    border-color: var(--accent-primary);
+}
+
+/* Mobile adjustments */
+@media (max-width: 1024px) {
+
+
+    .watchlistPanel,
+    .infoPanel {
+        display: none;
+        /* Hide sidebars on small tablets */
     }
 }
