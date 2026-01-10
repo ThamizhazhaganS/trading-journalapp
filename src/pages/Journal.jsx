@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useTrades } from '../context/TradeContext';
 import { Plus, X, Trash2 } from 'lucide-react';
 import styles from './Journal.module.css';
+import './JournalModal.css';
 
 export default function Journal() {
     const { trades, addTrade, deleteTrade } = useTrades();
@@ -47,15 +48,87 @@ export default function Journal() {
         });
     };
 
+    const [showImport, setShowImport] = useState(false);
+    const [csvContent, setCsvContent] = useState('');
+
+    const handleImport = () => {
+        if (!csvContent.trim()) return;
+
+        const lines = csvContent.trim().split('\n');
+        const newTrades = [];
+
+        // Simple CSV Parser: Expects Date, Symbol, Type, Entry, Exit, Qty (comma or tab separated)
+        // Skip header if 'Symbol' or 'Date' is in first line
+        const startIndex = (lines[0].toLowerCase().includes('symbol') || lines[0].toLowerCase().includes('date')) ? 1 : 0;
+
+        for (let i = startIndex; i < lines.length; i++) {
+            const line = lines[i].replace(/\r/g, '').replace(/\t/g, ','); // normalized
+            const cols = line.split(',');
+
+            if (cols.length >= 4) {
+                // Try to map columns intelligently or assume fixed order: 
+                // Date [0], Symbol [1], Type [2], Entry [3], Exit [4], Qty [5]
+                // This is a naive parser for now
+                const type = cols[2]?.toUpperCase().includes('SHORT') ? 'SHORT' : 'LONG';
+                const entry = parseFloat(cols[3]) || 0;
+                const exit = parseFloat(cols[4]) || 0;
+                const qty = parseFloat(cols[5]) || 1;
+                const pnl = (exit - entry) * qty * (type === 'LONG' ? 1 : -1);
+
+                newTrades.push({
+                    date: cols[0] || new Date().toISOString(),
+                    symbol: cols[1] || 'UNKNOWN',
+                    type: type,
+                    entryPrice: entry,
+                    exitPrice: exit,
+                    quantity: qty,
+                    pnl: pnl.toFixed(2),
+                    assetClass: 'Imported',
+                    status: pnl >= 0 ? 'WIN' : 'LOSS'
+                });
+            }
+        }
+
+        // Batch add - utilizing context one by one for now as context might not support batch
+        newTrades.forEach(t => addTrade(t));
+        setShowImport(false);
+        setCsvContent('');
+    };
+
     return (
         <div className={styles.journal}>
             <header className={styles.header}>
                 <h2>Trade Journal</h2>
-                <button className="btn" onClick={() => setIsAdding(!isAdding)}>
-                    {isAdding ? <X size={20} /> : <Plus size={20} />}
-                    {isAdding ? 'Cancel' : 'New Trade'}
-                </button>
+                <div className={styles.headerActions}>
+                    <button className="btn btn-secondary" onClick={() => setShowImport(!showImport)} style={{ marginRight: '0.5rem', background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
+                        Import CSV
+                    </button>
+                    <button className="btn" onClick={() => setIsAdding(!isAdding)}>
+                        {isAdding ? <X size={20} /> : <Plus size={20} />}
+                        {isAdding ? 'Cancel' : 'New Trade'}
+                    </button>
+                </div>
             </header>
+
+            {/* Import Modal */}
+            {showImport && (
+                <div className={styles.importModal}>
+                    <div className={styles.modalContent}>
+                        <h3>Import Trades (CSV)</h3>
+                        <p>Paste your CSV data below. Format: <code>Date, Symbol, Type, Entry, Exit, Qty</code></p>
+                        <textarea
+                            rows="5"
+                            placeholder="2024-03-01, BTCUSD, LONG, 60000, 62000, 0.5"
+                            value={csvContent}
+                            onChange={(e) => setCsvContent(e.target.value)}
+                        />
+                        <div className={styles.modalActions}>
+                            <button className={styles.cancelBtn} onClick={() => setShowImport(false)}>Cancel</button>
+                            <button className="btn" onClick={handleImport}>Import Data</button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {isAdding && (
                 <form onSubmit={handleSubmit} className={styles.formCard}>

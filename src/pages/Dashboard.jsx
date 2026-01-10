@@ -1,4 +1,6 @@
 import { useTrades } from '../context/TradeContext';
+import AIInsights from '../components/AIInsights';
+import Achievements from '../components/Achievements';
 import { TrendingUp, TrendingDown, DollarSign, Activity, PieChart as PieIcon, RotateCcw } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip, Legend } from 'recharts';
 import styles from './Dashboard.module.css';
@@ -61,14 +63,48 @@ export default function Dashboard() {
             {/* 2. Main Content Grid */}
             <div className={styles.dashboardGrid}>
 
-                {/* Left: Recent Activity (Taking more space) */}
+                {/* Left: Portfolio & Recent Activity (Main) */}
                 <div className={styles.mainCol}>
+                    <div className={styles.portfolioCard} style={{ height: '400px', marginBottom: '1.5rem' }}>
+                        <div className={styles.cardHeader}>
+                            <h3>Asset Allocation</h3>
+                        </div>
+                        <div className={styles.chartContainer}>
+                            {pieData.length > 0 ? (
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <PieChart>
+                                        <Pie
+                                            data={pieData}
+                                            cx="50%"
+                                            cy="50%"
+                                            innerRadius={80}
+                                            outerRadius={120}
+                                            paddingAngle={5}
+                                            dataKey="value"
+                                        >
+                                            {pieData.map((entry, index) => (
+                                                <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} stroke="none" />
+                                            ))}
+                                        </Pie>
+                                        <RechartsTooltip
+                                            contentStyle={{ backgroundColor: '#181b21', border: '1px solid #2d313a', borderRadius: '8px' }}
+                                            itemStyle={{ color: '#ededed' }}
+                                        />
+                                        <Legend />
+                                    </PieChart>
+                                </ResponsiveContainer>
+                            ) : (
+                                <div className={styles.emptyChart}>No data</div>
+                            )}
+                        </div>
+                    </div>
+
                     <section className={styles.recentSection}>
                         <div className={styles.sectionHeader}>
                             <h3>Recent Activity</h3>
                         </div>
                         <div className={styles.recentList}>
-                            {trades.slice(0, 7).map(trade => (
+                            {trades.slice(0, 5).map(trade => (
                                 <div key={trade.id} className={styles.tradeRow}>
                                     <div className={styles.tradeInfo}>
                                         <div className={styles.rowMain}>
@@ -93,44 +129,14 @@ export default function Dashboard() {
                     </section>
                 </div>
 
-                {/* Right: Portfolio & Other Widgets */}
+                {/* Right: AI & Achievements (Side) */}
                 <div className={styles.sideCol}>
-                    <div className={styles.portfolioCard}>
-                        <div className={styles.cardHeader}>
-                            <h3>Asset Allocation</h3>
-                        </div>
-                        <div className={styles.chartContainer}>
-                            {pieData.length > 0 ? (
-                                <ResponsiveContainer width="100%" height="100%">
-                                    <PieChart>
-                                        <Pie
-                                            data={pieData}
-                                            cx="50%"
-                                            cy="50%"
-                                            innerRadius={60}
-                                            outerRadius={80}
-                                            paddingAngle={5}
-                                            dataKey="value"
-                                        >
-                                            {pieData.map((entry, index) => (
-                                                <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} stroke="none" />
-                                            ))}
-                                        </Pie>
-                                        <RechartsTooltip
-                                            contentStyle={{ backgroundColor: '#181b21', border: '1px solid #2d313a', borderRadius: '8px' }}
-                                            itemStyle={{ color: '#ededed' }}
-                                        />
-                                        <Legend />
-                                    </PieChart>
-                                </ResponsiveContainer>
-                            ) : (
-                                <div className={styles.emptyChart}>No data</div>
-                            )}
-                        </div>
-                    </div>
+                    <AIInsights />
+                    <Achievements />
                 </div>
 
             </div>
         </div>
     );
 }
+
