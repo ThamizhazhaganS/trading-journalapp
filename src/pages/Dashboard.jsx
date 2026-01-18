@@ -1,6 +1,7 @@
 import { useTrades } from '../context/TradeContext';
 import AIInsights from '../components/AIInsights';
 import Achievements from '../components/Achievements';
+import EconomicCalendar from '../components/EconomicCalendar';
 import { TrendingUp, TrendingDown, DollarSign, Activity, PieChart as PieIcon, RotateCcw } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip, Legend } from 'recharts';
 import styles from './Dashboard.module.css';
@@ -133,6 +134,7 @@ export default function Dashboard() {
                 <div className={styles.sideCol}>
                     <AIInsights />
                     <Achievements />
+                    <EconomicCalendar />
                 </div>
 
             </div>

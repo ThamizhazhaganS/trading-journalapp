@@ -65,11 +65,11 @@ export default function Journal() {
             const line = lines[i].replace(/\r/g, '').replace(/\t/g, ','); // normalized
             const cols = line.split(',');
 
-            if (cols.length >= 4) {
+            if (cols.length >= 3) {
                 // Try to map columns intelligently or assume fixed order: 
                 // Date [0], Symbol [1], Type [2], Entry [3], Exit [4], Qty [5]
-                // This is a naive parser for now
-                const type = cols[2]?.toUpperCase().includes('SHORT') ? 'SHORT' : 'LONG';
+                const rawType = cols[2] ? cols[2].toUpperCase() : 'LONG';
+                const type = rawType.includes('SHORT') ? 'SHORT' : 'LONG';
                 const entry = parseFloat(cols[3]) || 0;
                 const exit = parseFloat(cols[4]) || 0;
                 const qty = parseFloat(cols[5]) || 1;
@@ -241,12 +241,72 @@ export default function Journal() {
                         </div>
                     </div>
                     <div className={styles.field}>
-                        <label>Notes</label>
-                        <textarea
-                            rows="3"
-                            value={formData.notes}
-                            onChange={e => setFormData({ ...formData, notes: e.target.value })}
-                        />
+                        <label>Notes <span style={{ fontSize: '0.7em', color: 'var(--text-secondary)' }}>(AI Voice enabled)</span></label>
+                        <div style={{ position: 'relative' }}>
+                            <textarea
+                                rows="3"
+                                value={formData.notes}
+                                onChange={e => setFormData({ ...formData, notes: e.target.value })}
+                                placeholder="Click the mic and speak..."
+                            />
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    if (!('webkitSpeechRecognition' in window)) {
+                                        alert('Voice input is not supported in this browser. Try Chrome.');
+                                        return;
+                                    }
+                                    const recognition = new window.webkitSpeechRecognition();
+                                    recognition.continuous = false;
+                                    recognition.lang = 'en-US';
+                                    recognition.interimResults = false;
+
+                                    recognition.onstart = () => {
+                                        const btn = document.getElementById('voiceBtn');
+                                        if (btn) btn.style.color = '#ef4444'; // Recording color
+                                    };
+
+                                    recognition.onend = () => {
+                                        const btn = document.getElementById('voiceBtn');
+                                        if (btn) btn.style.color = 'var(--text-secondary)';
+                                    };
+
+                                    recognition.onresult = (event) => {
+                                        const transcript = event.results[0][0].transcript;
+                                        setFormData(prev => {
+                                            // Simple AI: Detect emotion from keywords
+                                            let detectedEmotion = prev.emotion;
+                                            const lowerText = transcript.toLowerCase();
+                                            if (lowerText.includes('scared') || lowerText.includes('fear')) detectedEmotion = 'Fearful';
+                                            if (lowerText.includes('angry') || lowerText.includes('mad')) detectedEmotion = 'Revenge';
+                                            if (lowerText.includes('happy') || lowerText.includes('great')) detectedEmotion = 'Excited';
+                                            if (lowerText.includes('missed') || lowerText.includes('wish')) detectedEmotion = 'FOMO';
+
+                                            return {
+                                                ...prev,
+                                                notes: prev.notes ? prev.notes + ' ' + transcript : transcript,
+                                                emotion: detectedEmotion || prev.emotion
+                                            };
+                                        });
+                                    };
+
+                                    recognition.start();
+                                }}
+                                id="voiceBtn"
+                                style={{
+                                    position: 'absolute',
+                                    right: '10px',
+                                    bottom: '10px',
+                                    background: 'transparent',
+                                    border: 'none',
+                                    cursor: 'pointer',
+                                    color: 'var(--text-secondary)'
+                                }}
+                                title="Click to speak"
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z" /><path d="M19 10v2a7 7 0 0 1-14 0v-2" /><line x1="12" x2="12" y1="19" y2="22" /></svg>
+                            </button>
+                        </div>
                     </div>
                     <button type="submit" className="btn" style={{ marginTop: '1rem', width: '100%' }}>Save Trade</button>
                 </form>

@@ -24,25 +24,28 @@ export default function Market() {
 
     // Effect to start price simulation
     useEffect(() => {
-        // Initial random prices based on symbol type (mock)
-        const initialPrices = {};
-        watchlist.forEach(sym => {
-            let base = 100;
-            if (sym.includes('BTC') || sym.includes('btc')) base = 45000;
-            if (sym.includes('ETH') || sym.includes('eth')) base = 2800;
-            if (sym.includes('EUR') || sym.includes('eur')) base = 1.05;
-            if (sym.includes('JPY') || sym.includes('jpy')) base = 145;
-            if (sym.includes('AAPL')) base = 180;
-            if (sym.includes('TSLA')) base = 250;
-            if (sym.includes('NVDA')) base = 500;
+        setPrices(prev => {
+            const next = { ...prev };
+            watchlist.forEach(sym => {
+                if (next[sym]) return; // Preservation check
 
-            initialPrices[sym] = {
-                price: base,
-                change: (Math.random() * 2 - 1).toFixed(2),
-                color: Math.random() > 0.5 ? 'text-success' : 'text-danger'
-            };
+                let base = 100;
+                if (sym.includes('BTC') || sym.includes('btc')) base = 45000;
+                if (sym.includes('ETH') || sym.includes('eth')) base = 2800;
+                if (sym.includes('EUR') || sym.includes('eur')) base = 1.05;
+                if (sym.includes('JPY') || sym.includes('jpy')) base = 145;
+                if (sym.includes('AAPL')) base = 180;
+                if (sym.includes('TSLA')) base = 250;
+                if (sym.includes('NVDA')) base = 500;
+
+                next[sym] = {
+                    price: base,
+                    change: (Math.random() * 2 - 1).toFixed(2),
+                    color: Math.random() > 0.5 ? 'text-success' : 'text-danger'
+                };
+            });
+            return next;
         });
-        setPrices(initialPrices);
 
         // Live Ticker Effect
         const interval = setInterval(() => {
@@ -102,6 +105,25 @@ export default function Market() {
         setWatchlist(watchlist.filter(s => s !== sym));
     };
 
+    // Trade Overlay State
+    const [showTradePanel, setShowTradePanel] = useState(false);
+    const [tradeParams, setTradeParams] = useState({
+        entry: '',
+        stopLoss: '',
+        type: 'LONG',
+    });
+
+    const calculateRR = () => {
+        if (!tradeParams.entry || !tradeParams.stopLoss) return null;
+        const entry = parseFloat(tradeParams.entry);
+        const sl = parseFloat(tradeParams.stopLoss);
+        const risk = Math.abs(entry - sl);
+        const r2 = tradeParams.type === 'LONG' ? entry + (risk * 2) : entry - (risk * 2);
+        return { risk: risk.toFixed(2), target: r2.toFixed(2) };
+    };
+
+    const rrData = calculateRR();
+
     return (
         <div className={`${styles.marketPage} ${isFullScreen ? styles.fullScreenMode : ''}`}>
             {/* Header / Controls - Hidden in Full Screen */}
@@ -129,14 +151,24 @@ export default function Market() {
                         <button type="submit" className={styles.actionBtn}>Load</button>
                     </form>
 
-                    <button
-                        className={styles.actionBtn}
-                        onClick={() => setIsFullScreen(true)}
-                        title="Enter Full Screen"
-                        style={{ marginLeft: '1rem' }}
-                    >
-                        <Maximize2 size={16} />
-                    </button>
+                    <div style={{ display: 'flex', gap: '0.5rem' }}>
+                        <button
+                            className={`${styles.actionBtn} ${showTradePanel ? styles.activeBtn : ''}`}
+                            onClick={() => setShowTradePanel(true)}
+                            title="Open Trade Planner"
+                            style={{ marginLeft: '1rem', border: '1px solid var(--accent-primary)', color: 'var(--accent-primary)' }}
+                        >
+                            <Plus size={16} /> New Trade
+                        </button>
+
+                        <button
+                            className={styles.actionBtn}
+                            onClick={() => setIsFullScreen(true)}
+                            title="Enter Full Screen"
+                        >
+                            <Maximize2 size={16} />
+                        </button>
+                    </div>
                 </header>
             )}
 
@@ -190,7 +222,70 @@ export default function Market() {
                 )}
 
                 {/* 2. Main Chart Area */}
-                <div className={styles.mainChartArea}>
+                <div className={styles.mainChartArea} style={{ position: 'relative' }}>
+
+                    {/* Trade Builder Overlay */}
+                    {showTradePanel && (
+                        <div className={styles.tradeOverlay}>
+                            <div className={styles.overlayHeader}>
+                                <h3>Plan Trade: {symbol.split(':')[1]}</h3>
+                                <button className={styles.closeOverlayBtn} onClick={() => setShowTradePanel(false)}><X size={18} /></button>
+                            </div>
+
+                            <div className={styles.tradeFormGrid}>
+                                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                    <button
+                                        className={`btn ${tradeParams.type === 'LONG' ? 'btn-primary' : ''}`}
+                                        style={{ flex: 1, padding: '0.25rem', fontSize: '0.8rem', opacity: tradeParams.type === 'LONG' ? 1 : 0.5 }}
+                                        onClick={() => setTradeParams({ ...tradeParams, type: 'LONG' })}
+                                    >LONG</button>
+                                    <button
+                                        className={`btn ${tradeParams.type === 'SHORT' ? 'btn-danger' : ''}`}
+                                        style={{ flex: 1, padding: '0.25rem', fontSize: '0.8rem', opacity: tradeParams.type === 'SHORT' ? 1 : 0.5 }}
+                                        onClick={() => setTradeParams({ ...tradeParams, type: 'SHORT' })}
+                                    >SHORT</button>
+                                </div>
+
+                                <div>
+                                    <label style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Entry Price</label>
+                                    <input
+                                        type="number"
+                                        style={{ width: '100%', padding: '0.4rem', borderRadius: '4px', border: '1px solid var(--border)', background: 'var(--bg-app)', color: 'white' }}
+                                        value={tradeParams.entry}
+                                        onChange={e => setTradeParams({ ...tradeParams, entry: e.target.value })}
+                                    />
+                                </div>
+                                <div>
+                                    <label style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Stop Loss</label>
+                                    <input
+                                        type="number"
+                                        style={{ width: '100%', padding: '0.4rem', borderRadius: '4px', border: '1px solid var(--border)', background: 'var(--bg-app)', color: 'white' }}
+                                        value={tradeParams.stopLoss}
+                                        onChange={e => setTradeParams({ ...tradeParams, stopLoss: e.target.value })}
+                                    />
+                                </div>
+
+                                {rrData && (
+                                    <div style={{ background: 'rgba(255,255,255,0.05)', padding: '0.5rem', borderRadius: '6px', fontSize: '0.8rem' }}>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                            <span>Risk:</span>
+                                            <span style={{ color: '#ef4444' }}>${rrData.risk}</span>
+                                        </div>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '0.25rem' }}>
+                                            <span>Target (1:2):</span>
+                                            <span style={{ color: '#10b981' }}>{rrData.target}</span>
+                                        </div>
+                                    </div>
+                                )}
+
+                                <button className={styles.analyzeBtnOverlay} onClick={() => alert(`Trade Plan Saved for ${symbol}!\nType: ${tradeParams.type}\nEntry: ${tradeParams.entry}\nSL: ${tradeParams.stopLoss}`)}>
+                                    Save to Journal
+                                </button>
+                                <div className={styles.helperText}>Calculates R:R instantly</div>
+                            </div>
+                        </div>
+                    )}
+
                     <div className={styles.chartCard} style={isFullScreen ? { borderRadius: 0, border: 'none' } : {}}>
                         <TradingViewChart symbol={symbol} />
 
