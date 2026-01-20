@@ -162,6 +162,13 @@
         box-shadow: 5px 0 30px rgba(0, 0, 0, 0.2);
     }
 
+    .divider {
+        height: 1px;
+        background: var(--border);
+        margin: 1rem 0;
+        width: 100%;
+    }
+
     .navItem {
         flex-direction: row;
         justify-content: flex-start;
