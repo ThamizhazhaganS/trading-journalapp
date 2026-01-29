@@ -6,6 +6,7 @@ import Analytics from './pages/Analytics';
 import Market from './pages/Market';
 import Calculator from './pages/Calculator';
 import Login from './pages/Login';
+import Profile from './pages/Profile';
 import PrivateRoute from './components/PrivateRoute';
 import { TradeProvider } from './context/TradeContext';
 
@@ -25,6 +26,7 @@ function App() {
           <Route path="analytics" element={<Analytics />} />
           <Route path="market" element={<Market />} />
           <Route path="calculator" element={<Calculator />} />
+          <Route path="profile" element={<Profile />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Route>
       </Routes>

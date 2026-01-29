@@ -32,7 +32,7 @@
 /* --- Mobile Header --- */
 .header {
     padding: 0.75rem 1.25rem;
-    background: rgba(18, 18, 18, 0.85);
+    background: var(--bg-header);
     /* Glassmorphism */
     backdrop-filter: blur(12px);
     position: sticky;
@@ -70,7 +70,7 @@
     left: 0;
     right: 0;
     height: 70px;
-    background: #0f1115;
+    background: var(--bg-nav);
     /* Deeper dark for contrast */
     border-top: 1px solid var(--border);
     display: flex;
@@ -78,7 +78,7 @@
     align-items: center;
     z-index: 100;
     padding-bottom: env(safe-area-inset-bottom);
-    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.3);
+    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.1);
 }
 
 .sidebarHeader {
@@ -92,7 +92,7 @@
     align-items: center;
     justify-content: center;
     gap: 5px;
-    color: var(--text-muted);
+    color: var(--text-secondary);
     font-size: 0.7rem;
     text-decoration: none;
     width: 100%;
@@ -138,8 +138,9 @@
     .sidebarHeader h1 {
         font-size: 1.25rem;
         font-weight: 700;
-        color: #fff;
-        background: linear-gradient(to right, #fff, #9ca3af);
+        color: var(--text-primary);
+        background: linear-gradient(to right, var(--text-primary), var(--text-secondary));
+        background-clip: text;
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
     }
@@ -157,9 +158,9 @@
         padding: 2rem 1.5rem;
         border-right: 1px solid var(--border);
         border-top: none;
-        background: #0b0c0e;
+        background: var(--bg-nav);
         /* Slightly darker sidebar */
-        box-shadow: 5px 0 30px rgba(0, 0, 0, 0.2);
+        box-shadow: 5px 0 30px rgba(0, 0, 0, 0.05);
     }
 
     .divider {

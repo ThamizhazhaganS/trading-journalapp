@@ -48,7 +48,7 @@
     margin: 0;
     font-size: 1.1rem;
     font-weight: 700;
-    background: linear-gradient(to right, #fff, #94a3b8);
+    background: linear-gradient(to right, var(--text-primary), var(--text-secondary));
     -webkit-background-clip: text;
     background-clip: text;
     -webkit-text-fill-color: transparent;
@@ -76,15 +76,15 @@
     gap: 0.75rem;
     align-items: flex-start;
     padding: 0.75rem;
-    background: rgba(255, 255, 255, 0.02);
+    background: var(--bg-row);
     border-radius: 8px;
-    border: 1px solid rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--border);
     transition: transform 0.2s;
 }
 
 .insightRow:hover {
     transform: translateX(4px);
-    background: rgba(255, 255, 255, 0.04);
+    background: var(--bg-card-hover);
 }
 
 .insightIconWrapper {

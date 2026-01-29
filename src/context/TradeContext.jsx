@@ -27,54 +27,116 @@ export function TradeProvider({ children }) {
   const [user, setUser] = useState(null);
   const [trades, setTrades] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'dark');
+  const [privacyMode, setPrivacyMode] = useState(() => localStorage.getItem('privacyMode') === 'true');
 
-  // 1. Auth Listener
+  // Global Asset Sync (Market -> Calculator)
+  const [activeAsset, setActiveAsset] = useState({
+    symbol: 'BINANCE:BTCUSDT',
+    price: 45000,
+    type: 'CRYPTO',
+    lastUpdated: Date.now()
+  });
+
+  // Theme Sync
   useEffect(() => {
-    if (!supabase) {
-      // Offline mode / No keys
-      loadLocalData();
-      setLoading(false);
-      return;
-    }
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('theme', theme);
+  }, [theme]);
 
-    // Check active session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        fetchTradesSupabase(session.user.id);
-      } else {
-        loadLocalData();
-        setLoading(false);
+  // Privacy Sync
+  useEffect(() => {
+    localStorage.setItem('privacyMode', privacyMode);
+  }, [privacyMode]);
+
+  // Auth Listener
+  useEffect(() => {
+    let isMounted = true;
+
+    const initAuth = async () => {
+      if (!supabase) {
+        if (isMounted) {
+          loadLocalData();
+          setLoading(false);
+        }
+        return;
       }
-    });
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        fetchTradesSupabase(session.user.id);
-      } else {
-        loadLocalData(); // Fallback to local if logged out
-        setLoading(false);
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (isMounted) {
+          setUser(session?.user ?? null);
+          if (session?.user) {
+            setTheme(session.user.user_metadata?.theme || 'dark');
+            setPrivacyMode(session.user.user_metadata?.privacyMode || false);
+            await fetchTradesSupabase(session.user.id);
+          } else {
+            loadLocalData();
+          }
+          setLoading(false);
+        }
+      } catch (err) {
+        console.error("Auth init error:", err);
+        if (isMounted) {
+          loadLocalData();
+          setLoading(false);
+        }
       }
-    });
+    };
 
-    return () => subscription.unsubscribe();
+    initAuth();
+
+    const { data: { subscription } } = supabase?.auth.onAuthStateChange((_event, session) => {
+      if (isMounted) {
+        setUser(session?.user ?? null);
+        if (session?.user) {
+          setTheme(session.user.user_metadata?.theme || 'dark');
+          setPrivacyMode(session.user.user_metadata?.privacyMode || false);
+          fetchTradesSupabase(session.user.id);
+        } else {
+          loadLocalData();
+        }
+      }
+    }) || { data: { subscription: { unsubscribe: () => { } } } };
+
+    return () => {
+      isMounted = false;
+      subscription.unsubscribe();
+    };
   }, []);
 
-  // Load from LocalStorage
-  const loadLocalData = () => {
-    const saved = localStorage.getItem('trades');
-    if (saved) {
-      setTrades(JSON.parse(saved));
-    } else {
-      setTrades(getDummyData());
+  const toggleTheme = async () => {
+    const newTheme = theme === 'dark' ? 'light' : 'dark';
+    setTheme(newTheme);
+    if (user && supabase) {
+      await supabase.auth.updateUser({ data: { theme: newTheme } });
     }
-    setLoading(false);
   };
 
-  // Load from Supabase
+  const togglePrivacyMode = async () => {
+    const newMode = !privacyMode;
+    setPrivacyMode(newMode);
+    if (user && supabase) {
+      await supabase.auth.updateUser({ data: { privacyMode: newMode } });
+    }
+  };
+
+  const loadLocalData = () => {
+    try {
+      const saved = localStorage.getItem('trades');
+      if (saved) {
+        setTrades(JSON.parse(saved));
+      } else {
+        setTrades(getDummyData());
+      }
+    } catch (e) {
+      console.error("Local data parse error:", e);
+      setTrades(getDummyData());
+    }
+  };
+
   const fetchTradesSupabase = async (userId) => {
-    setLoading(true);
+    if (!supabase) return;
     const { data, error } = await supabase
       .from('trades')
       .select('*')
@@ -83,29 +145,21 @@ export function TradeProvider({ children }) {
 
     if (error) {
       console.error('Error fetching trades:', error);
-      // Fallback? or just show empty
     } else {
-      // Transform snake_case to camelCase if needed, or adjust app to use snake_case
-      // For simplicity, we assume generic JSON column or mapped fields. 
-      // In a real app we'd map DB columns to our state shape.
-      // Let's assume DB column names match or we map them.
-      // Simplified: We'll assume the DB setup has columns: id, date, symbol, etc.
-      if (data && data.length > 0) setTrades(data);
-      else setTrades([]); // Start clean if cloud is empty
+      setTrades(data || []);
     }
-    setLoading(false);
   };
 
-
-  // 2. Data Persistence (Local Sync)
   useEffect(() => {
     if (!user) {
-      localStorage.setItem('trades', JSON.stringify(trades));
+      try {
+        localStorage.setItem('trades', JSON.stringify(trades));
+      } catch (e) {
+        console.error("Local storage save error:", e);
+      }
     }
   }, [trades, user]);
 
-
-  // 3. Actions
   const addTrade = async (trade) => {
     const newTrade = {
       ...trade,
@@ -115,18 +169,15 @@ export function TradeProvider({ children }) {
     };
 
     if (user && supabase) {
-      // Save to Cloud
       const { error } = await supabase.from('trades').insert([{
         ...newTrade,
         user_id: user.id
       }]);
       if (error) {
         alert('Error saving to cloud: ' + error.message);
-        return; // Don't update UI if failed? Or optimistic update?
+        return;
       }
     }
-
-    // Optimistic / Local Update
     setTrades(prev => [newTrade, ...prev]);
   };
 
@@ -139,7 +190,7 @@ export function TradeProvider({ children }) {
 
   const resetData = () => {
     if (user) {
-      alert("Cannot reset cloud data completely from here for safety.");
+      alert("Delete cloud trades individualy or via profile for safety.");
       return;
     }
     const freshData = getDummyData();
@@ -151,7 +202,7 @@ export function TradeProvider({ children }) {
     const totalTrades = trades.length;
     const wins = trades.filter(t => t.status === 'WIN').length;
     const winRate = totalTrades ? ((wins / totalTrades) * 100).toFixed(1) : 0;
-    const totalPnL = trades.reduce((acc, t) => acc + Number(t.pnl), 0);
+    const totalPnL = trades.reduce((acc, t) => acc + Number(t.pnl || 0), 0);
 
     return {
       totalTrades,
@@ -163,7 +214,11 @@ export function TradeProvider({ children }) {
   };
 
   return (
-    <TradeContext.Provider value={{ trades, user, loading, addTrade, deleteTrade, resetData, getStats }}>
+    <TradeContext.Provider value={{
+      trades, user, loading, addTrade, deleteTrade, resetData, getStats,
+      theme, toggleTheme, privacyMode, togglePrivacyMode,
+      activeAsset, setActiveAsset
+    }}>
       {children}
     </TradeContext.Provider>
   );

@@ -4,8 +4,24 @@ import { AreaChart, Area, BarChart, Bar, LineChart, Line, ComposedChart, XAxis, 
 import styles from './Analytics.module.css';
 
 export default function Analytics() {
-    const { trades } = useTrades();
+    const { trades, user } = useTrades();
     const [chartType, setChartType] = useState('area');
+
+    const currency = user?.user_metadata?.currency || 'USD';
+    const initialCapital = Number(user?.user_metadata?.initial_capital) || 10000;
+
+    const formatCurrency = (val) => {
+        return new Intl.NumberFormat('en-US', {
+            style: 'currency',
+            currency: currency,
+            maximumFractionDigits: 0
+        }).format(val);
+    };
+
+    const getCurrencySymbol = (code) => {
+        const symbols = { 'USD': '$', 'INR': '₹', 'EUR': '€', 'GBP': '£' };
+        return symbols[code] || '$';
+    };
 
     // Custom small tooltip style
     const tooltipStyle = {
@@ -21,7 +37,7 @@ export default function Analytics() {
         .slice()
         .sort((a, b) => new Date(a.date) - new Date(b.date))
         .reduce((acc, trade) => {
-            const prevEquity = acc.length > 0 ? acc[acc.length - 1].equity : 10000; // Start with 10k dummy equity
+            const prevEquity = acc.length > 0 ? acc[acc.length - 1].equity : initialCapital;
             acc.push({
                 date: new Date(trade.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }),
                 pnl: Number(trade.pnl),
@@ -104,7 +120,7 @@ export default function Analytics() {
                                 <div
                                     key={day.index}
                                     className={`${styles.calendarDay} ${day.active ? (day.pnl >= 0 ? styles.dayWin : styles.dayLoss) : ''}`}
-                                    title={`${day.dateStr}: $${day.pnl}`}
+                                    title={`${day.dateStr}: ${getCurrencySymbol(currency)}${day.pnl}`}
                                 >
                                     <span className={styles.dayNumber}>{day.day}</span>
                                     {day.active && <span className={styles.dayPnL}>{day.pnl > 0 ? '+' : ''}{day.pnl}</span>}

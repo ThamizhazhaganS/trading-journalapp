@@ -7,8 +7,27 @@ import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip, L
 import styles from './Dashboard.module.css';
 
 export default function Dashboard() {
-    const { getStats, trades, resetData } = useTrades();
+    const { getStats, trades, resetData, user, privacyMode } = useTrades();
     const stats = getStats();
+
+    const currency = user?.user_metadata?.currency || 'USD';
+
+    // Mask sensitive numbers for Privacy Mode
+    const maskValue = (value, unit = '') => {
+        if (privacyMode) return '****';
+        return `${value}${unit}`;
+    };
+
+    const formatCurrency = (val) => {
+        if (privacyMode) return '****';
+        return new Intl.NumberFormat('en-US', {
+            style: 'currency',
+            currency: currency
+        }).format(val);
+    };
+
+    // Get display name (MetaData or Email fallback)
+    const displayName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Trader';
 
     // Calculate Asset Allocation for Portfolio Card
     const assetAllocation = trades.reduce((acc, trade) => {
@@ -28,7 +47,7 @@ export default function Dashboard() {
         <div className={styles.dashboard}>
             <header className={styles.header}>
                 <div>
-                    <h2>Overview</h2>
+                    <h2>Hello, {displayName} 👋</h2>
                     <span className={styles.date}>{new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}</span>
                 </div>
                 <button className={styles.resetBtn} onClick={resetData} title="Reset to default data">
@@ -41,18 +60,17 @@ export default function Dashboard() {
                 <div className={styles.tickerCard}>
                     <div className={styles.tickerLabel}>Total P&L</div>
                     <div className={`${styles.tickerValue} ${Number(stats.totalPnL) >= 0 ? 'text-success' : 'text-danger'}`}>
-                        {Number(stats.totalPnL) >= 0 ? '+' : ''}${stats.totalPnL}
+                        {formatCurrency(stats.totalPnL)}
                     </div>
                 </div>
                 <div className={styles.tickerCard}>
                     <div className={styles.tickerLabel}>Win Rate</div>
-                    <div className={styles.tickerValue}>{stats.winRate}%</div>
+                    <div className={styles.tickerValue}>{maskValue(stats.winRate, '%')}</div>
                 </div>
                 <div className={styles.tickerCard}>
                     <div className={styles.tickerLabel}>Profit Factor</div>
                     <div className={styles.tickerValue}>
-                        {/* Simple Profit Factor Approx if we had gross win/loss, for now using Win/Loss count */}
-                        {stats.wins}W / {stats.losses}L
+                        {privacyMode ? '****' : `${stats.wins}W / ${stats.losses}L`}
                     </div>
                 </div>
                 <div className={styles.tickerCard}>
@@ -120,7 +138,7 @@ export default function Dashboard() {
                                     </div>
                                     <div className={styles.tradeResult}>
                                         <span className={`${styles.pnl} ${Number(trade.pnl) >= 0 ? 'text-success' : 'text-danger'}`}>
-                                            {Number(trade.pnl) >= 0 ? '+' : ''}${trade.pnl}
+                                            {formatCurrency(trade.pnl)}
                                         </span>
                                     </div>
                                 </div>

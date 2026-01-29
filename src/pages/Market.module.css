@@ -20,6 +20,11 @@
     font-weight: 700;
 }
 
+.headerActions {
+    display: flex;
+    gap: 0.5rem;
+}
+
 .controls {
     display: flex;
     align-items: center;

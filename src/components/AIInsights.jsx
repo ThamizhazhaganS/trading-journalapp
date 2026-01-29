@@ -4,7 +4,14 @@ import { Sparkles, Brain, TrendingUp, AlertTriangle } from 'lucide-react';
 import styles from './AIInsights.module.css';
 
 export default function AIInsights() {
-    const { trades } = useTrades();
+    const { trades, user } = useTrades();
+
+    const currency = user?.user_metadata?.currency || 'USD';
+
+    const getCurrencySymbol = (code) => {
+        const symbols = { 'USD': '$', 'INR': '₹', 'EUR': '€', 'GBP': '£' };
+        return symbols[code] || '$';
+    };
 
     const insights = useMemo(() => {
         if (!trades || !Array.isArray(trades) || !trades.length) return [];
@@ -59,7 +66,7 @@ export default function AIInsights() {
             results.push({
                 icon: <Sparkles size={18} className={styles.iconHighlight} />,
                 title: "Star Performer",
-                desc: `Your most profitable asset class is ${bestAsset} (+$${assetPerformance[bestAsset].pnl.toFixed(0)}). Stick to what pays!`
+                desc: `Your most profitable asset class is ${bestAsset} (+${getCurrencySymbol(currency)}${assetPerformance[bestAsset].pnl.toFixed(0)}). Stick to what pays!`
             });
         }
 
@@ -73,7 +80,7 @@ export default function AIInsights() {
         }
 
         return results.slice(0, 3); // Return top 3 insights
-    }, [trades]);
+    }, [trades, currency]);
 
     return (
         <div className={styles.aiCard}>

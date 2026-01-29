@@ -5,8 +5,20 @@ import styles from './Journal.module.css';
 import './JournalModal.css';
 
 export default function Journal() {
-    const { trades, addTrade, deleteTrade } = useTrades();
+    const { trades, addTrade, deleteTrade, user, privacyMode } = useTrades();
     const [isAdding, setIsAdding] = useState(false);
+
+    const currency = user?.user_metadata?.currency || 'USD';
+    const tradingRules = user?.user_metadata?.trading_rules || '';
+
+    const formatCurrency = (val) => {
+        if (privacyMode) return '****';
+        return new Intl.NumberFormat('en-US', {
+            style: 'currency',
+            currency: currency
+        }).format(val);
+    };
+
     const [formData, setFormData] = useState({
         symbol: '',
         date: new Date().toISOString().split('T')[0], // Default to today
@@ -48,6 +60,7 @@ export default function Journal() {
         });
     };
 
+    // ... handleImport logic (kept as is) ...
     const [showImport, setShowImport] = useState(false);
     const [csvContent, setCsvContent] = useState('');
 
@@ -56,18 +69,13 @@ export default function Journal() {
 
         const lines = csvContent.trim().split('\n');
         const newTrades = [];
-
-        // Simple CSV Parser: Expects Date, Symbol, Type, Entry, Exit, Qty (comma or tab separated)
-        // Skip header if 'Symbol' or 'Date' is in first line
         const startIndex = (lines[0].toLowerCase().includes('symbol') || lines[0].toLowerCase().includes('date')) ? 1 : 0;
 
         for (let i = startIndex; i < lines.length; i++) {
-            const line = lines[i].replace(/\r/g, '').replace(/\t/g, ','); // normalized
+            const line = lines[i].replace(/\r/g, '').replace(/\t/g, ',');
             const cols = line.split(',');
 
             if (cols.length >= 3) {
-                // Try to map columns intelligently or assume fixed order: 
-                // Date [0], Symbol [1], Type [2], Entry [3], Exit [4], Qty [5]
                 const rawType = cols[2] ? cols[2].toUpperCase() : 'LONG';
                 const type = rawType.includes('SHORT') ? 'SHORT' : 'LONG';
                 const entry = parseFloat(cols[3]) || 0;
@@ -88,8 +96,6 @@ export default function Journal() {
                 });
             }
         }
-
-        // Batch add - utilizing context one by one for now as context might not support batch
         newTrades.forEach(t => addTrade(t));
         setShowImport(false);
         setCsvContent('');
@@ -131,185 +137,151 @@ export default function Journal() {
             )}
 
             {isAdding && (
-                <form onSubmit={handleSubmit} className={styles.formCard}>
-                    <div className={styles.formGrid}>
-                        <div className={styles.field}>
-                            <label>Symbol</label>
-                            <input
-                                required
-                                placeholder="e.g. BTC/USD"
-                                value={formData.symbol}
-                                onChange={e => setFormData({ ...formData, symbol: e.target.value.toUpperCase() })}
-                            />
+                <div className={styles.formSection}>
+                    {/* Rules Sidebar for Discipline */}
+                    {tradingRules && (
+                        <div className={styles.rulesPanel}>
+                            <h4>Reminder: Trading Rules</h4>
+                            <ul className={styles.rulesList}>
+                                {tradingRules.split('\n').filter(r => r.trim()).map((rule, idx) => (
+                                    <li key={idx}>{rule}</li>
+                                ))}
+                            </ul>
                         </div>
-                        <div className={styles.field}>
-                            <label>Date</label>
-                            <input
-                                type="date"
-                                required
-                                value={formData.date}
-                                onChange={e => setFormData({ ...formData, date: e.target.value })}
-                            />
-                        </div>
-                        <div className={styles.field}>
-                            <label>Type</label>
-                            <select
-                                value={formData.type}
-                                onChange={e => setFormData({ ...formData, type: e.target.value })}
-                            >
-                                <option value="LONG">Long</option>
-                                <option value="SHORT">Short</option>
-                            </select>
-                        </div>
-                        <div className={styles.field}>
-                            <label>Entry Price</label>
-                            <input
-                                type="number" step="any" required
-                                value={formData.entryPrice}
-                                onChange={e => setFormData({ ...formData, entryPrice: e.target.value })}
-                            />
-                        </div>
-                        <div className={styles.field}>
-                            <label>Exit Price</label>
-                            <input
-                                type="number" step="any" required
-                                value={formData.exitPrice}
-                                onChange={e => setFormData({ ...formData, exitPrice: e.target.value })}
-                            />
-                        </div>
-                        <div className={styles.field}>
-                            <label>Quantity</label>
-                            <input
-                                type="number" step="any" required
-                                value={formData.quantity}
-                                onChange={e => setFormData({ ...formData, quantity: e.target.value })}
-                            />
-                        </div>
-                        <div className={styles.field}>
-                            <label>Strategy</label>
-                            <input
-                                placeholder="e.g. Breakout"
-                                value={formData.strategy}
-                                onChange={e => setFormData({ ...formData, strategy: e.target.value })}
-                            />
-                        </div>
-                        <div className={styles.field}>
-                            <label>Emotion</label>
-                            <select
-                                value={formData.emotion}
-                                onChange={e => setFormData({ ...formData, emotion: e.target.value })}
-                            >
-                                <option value="">Select...</option>
-                                <option value="Confident">Confident</option>
-                                <option value="FOMO">FOMO</option>
-                                <option value="Fearful">Fearful</option>
-                                <option value="Greedy">Greedy</option>
-                                <option value="Neutral">Neutral</option>
-                                <option value="Revenge">Revenge</option>
-                                <option value="Frustrated">Frustrated</option>
-                                <option value="Calm">Calm</option>
-                                <option value="Excited">Excited</option>
-                                <option value="Hopeful">Hopeful</option>
-                            </select>
-                        </div>
-                        <div className={styles.field}>
-                            <label>Asset Class</label>
-                            <select
-                                value={formData.assetClass}
-                                onChange={e => setFormData({ ...formData, assetClass: e.target.value })}
-                            >
-                                <option value="Crypto">Crypto</option>
-                                <option value="Forex">Forex</option>
-                                <option value="Stocks">Stocks</option>
-                                <option value="Indices">Indices</option>
-                                <option value="Commodities">Commodities</option>
-                            </select>
-                        </div>
-                        <div className={styles.field}>
-                            <label>Market Trend</label>
-                            <select
-                                value={formData.marketTrend}
-                                onChange={e => setFormData({ ...formData, marketTrend: e.target.value })}
-                            >
-                                <option value="">Select...</option>
-                                <option value="Strong Uptrend">Strong Uptrend</option>
-                                <option value="Uptrend">Uptrend</option>
-                                <option value="Ranging">Ranging</option>
-                                <option value="Downtrend">Downtrend</option>
-                                <option value="Strong Downtrend">Strong Downtrend</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div className={styles.field}>
-                        <label>Notes <span style={{ fontSize: '0.7em', color: 'var(--text-secondary)' }}>(AI Voice enabled)</span></label>
-                        <div style={{ position: 'relative' }}>
-                            <textarea
-                                rows="3"
-                                value={formData.notes}
-                                onChange={e => setFormData({ ...formData, notes: e.target.value })}
-                                placeholder="Click the mic and speak..."
-                            />
-                            <button
-                                type="button"
-                                onClick={() => {
-                                    if (!('webkitSpeechRecognition' in window)) {
-                                        alert('Voice input is not supported in this browser. Try Chrome.');
-                                        return;
-                                    }
-                                    const recognition = new window.webkitSpeechRecognition();
-                                    recognition.continuous = false;
-                                    recognition.lang = 'en-US';
-                                    recognition.interimResults = false;
+                    )}
 
-                                    recognition.onstart = () => {
-                                        const btn = document.getElementById('voiceBtn');
-                                        if (btn) btn.style.color = '#ef4444'; // Recording color
-                                    };
-
-                                    recognition.onend = () => {
-                                        const btn = document.getElementById('voiceBtn');
-                                        if (btn) btn.style.color = 'var(--text-secondary)';
-                                    };
-
-                                    recognition.onresult = (event) => {
-                                        const transcript = event.results[0][0].transcript;
-                                        setFormData(prev => {
-                                            // Simple AI: Detect emotion from keywords
-                                            let detectedEmotion = prev.emotion;
-                                            const lowerText = transcript.toLowerCase();
-                                            if (lowerText.includes('scared') || lowerText.includes('fear')) detectedEmotion = 'Fearful';
-                                            if (lowerText.includes('angry') || lowerText.includes('mad')) detectedEmotion = 'Revenge';
-                                            if (lowerText.includes('happy') || lowerText.includes('great')) detectedEmotion = 'Excited';
-                                            if (lowerText.includes('missed') || lowerText.includes('wish')) detectedEmotion = 'FOMO';
-
-                                            return {
-                                                ...prev,
-                                                notes: prev.notes ? prev.notes + ' ' + transcript : transcript,
-                                                emotion: detectedEmotion || prev.emotion
-                                            };
-                                        });
-                                    };
-
-                                    recognition.start();
-                                }}
-                                id="voiceBtn"
-                                style={{
-                                    position: 'absolute',
-                                    right: '10px',
-                                    bottom: '10px',
-                                    background: 'transparent',
-                                    border: 'none',
-                                    cursor: 'pointer',
-                                    color: 'var(--text-secondary)'
-                                }}
-                                title="Click to speak"
-                            >
-                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z" /><path d="M19 10v2a7 7 0 0 1-14 0v-2" /><line x1="12" x2="12" y1="19" y2="22" /></svg>
-                            </button>
+                    <form onSubmit={handleSubmit} className={styles.formCard}>
+                        <div className={styles.formGrid}>
+                            <div className={styles.field}>
+                                <label>Symbol</label>
+                                <input
+                                    required
+                                    placeholder="e.g. BTC/USD"
+                                    value={formData.symbol}
+                                    onChange={e => setFormData({ ...formData, symbol: e.target.value.toUpperCase() })}
+                                />
+                            </div>
+                            <div className={styles.field}>
+                                <label>Date</label>
+                                <input
+                                    type="date"
+                                    required
+                                    value={formData.date}
+                                    onChange={e => setFormData({ ...formData, date: e.target.value })}
+                                />
+                            </div>
+                            <div className={styles.field}>
+                                <label>Type</label>
+                                <select
+                                    value={formData.type}
+                                    onChange={e => setFormData({ ...formData, type: e.target.value })}
+                                >
+                                    <option value="LONG">Long</option>
+                                    <option value="SHORT">Short</option>
+                                </select>
+                            </div>
+                            <div className={styles.field}>
+                                <label>Entry Price</label>
+                                <input
+                                    type="number" step="any" required
+                                    value={formData.entryPrice}
+                                    onChange={e => setFormData({ ...formData, entryPrice: e.target.value })}
+                                />
+                            </div>
+                            <div className={styles.field}>
+                                <label>Exit Price</label>
+                                <input
+                                    type="number" step="any" required
+                                    value={formData.exitPrice}
+                                    onChange={e => setFormData({ ...formData, exitPrice: e.target.value })}
+                                />
+                            </div>
+                            <div className={styles.field}>
+                                <label>Quantity</label>
+                                <input
+                                    type="number" step="any" required
+                                    value={formData.quantity}
+                                    onChange={e => setFormData({ ...formData, quantity: e.target.value })}
+                                />
+                            </div>
                         </div>
-                    </div>
-                    <button type="submit" className="btn" style={{ marginTop: '1rem', width: '100%' }}>Save Trade</button>
-                </form>
+
+                        <div className={styles.formGrid} style={{ marginTop: '1rem' }}>
+                            <div className={styles.field}>
+                                <label>Strategy</label>
+                                <input
+                                    placeholder="e.g. Breakout"
+                                    value={formData.strategy}
+                                    onChange={e => setFormData({ ...formData, strategy: e.target.value })}
+                                />
+                            </div>
+                            <div className={styles.field}>
+                                <label>Emotion</label>
+                                <select
+                                    value={formData.emotion}
+                                    onChange={e => setFormData({ ...formData, emotion: e.target.value })}
+                                >
+                                    <option value="">Select...</option>
+                                    <option value="Confident">Confident</option>
+                                    <option value="FOMO">FOMO</option>
+                                    <option value="Fearful">Fearful</option>
+                                    <option value="Greedy">Greedy</option>
+                                    <option value="Neutral">Neutral</option>
+                                    <option value="Revenge">Revenge</option>
+                                    <option value="Frustrated">Frustrated</option>
+                                    <option value="Calm">Calm</option>
+                                    <option value="Excited">Excited</option>
+                                    <option value="Hopeful">Hopeful</option>
+                                </select>
+                            </div>
+                            <div className={styles.field}>
+                                <label>Asset Class</label>
+                                <select
+                                    value={formData.assetClass}
+                                    onChange={e => setFormData({ ...formData, assetClass: e.target.value })}
+                                >
+                                    <option value="Crypto">Crypto</option>
+                                    <option value="Forex">Forex</option>
+                                    <option value="Stocks">Stocks</option>
+                                    <option value="Indices">Indices</option>
+                                    <option value="Commodities">Commodities</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div className={styles.field} style={{ marginTop: '1rem' }}>
+                            <label>Notes (Voice enabled)</label>
+                            <div style={{ position: 'relative' }}>
+                                <textarea
+                                    rows="3"
+                                    value={formData.notes}
+                                    onChange={e => setFormData({ ...formData, notes: e.target.value })}
+                                    placeholder="Describe your reasoning..."
+                                />
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        if (!('webkitSpeechRecognition' in window)) {
+                                            alert('Voice input is not supported. Try Chrome.');
+                                            return;
+                                        }
+                                        const recognition = new window.webkitSpeechRecognition();
+                                        recognition.onresult = (e) => {
+                                            const transcript = e.results[0][0].transcript;
+                                            setFormData(prev => ({ ...prev, notes: prev.notes + ' ' + transcript }));
+                                        };
+                                        recognition.start();
+                                    }}
+                                    id="voiceBtn"
+                                    style={{ position: 'absolute', right: '10px', bottom: '10px', background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)' }}
+                                >
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z" /><path d="M19 10v2a7 7 0 0 1-14 0v-2" /><line x1="12" x2="12" y1="19" y2="22" /></svg>
+                                </button>
+                            </div>
+                        </div>
+                        <button type="submit" className="btn" style={{ marginTop: '1rem', width: '100%' }}>Save Trade</button>
+                    </form>
+                </div>
             )}
 
             {/* Desktop Table */}
@@ -340,7 +312,7 @@ export default function Journal() {
                                 <td>{trade.entryPrice}</td>
                                 <td>{trade.exitPrice}</td>
                                 <td className={Number(trade.pnl) >= 0 ? 'text-success' : 'text-danger'}>
-                                    {Number(trade.pnl) >= 0 ? '+' : ''}${trade.pnl}
+                                    {formatCurrency(trade.pnl)}
                                 </td>
                                 <td>
                                     <button className={styles.iconBtn} onClick={() => deleteTrade(trade.id)}>
@@ -378,7 +350,7 @@ export default function Journal() {
                         </div>
                         <div className={styles.tradeFooter}>
                             <span className={Number(trade.pnl) >= 0 ? 'text-success' : 'text-danger'}>
-                                {Number(trade.pnl) >= 0 ? '+' : ''}{trade.pnl} PnL
+                                {formatCurrency(trade.pnl)}
                             </span>
                             <span className={styles.date}>{new Date(trade.date).toLocaleDateString()}</span>
                         </div>

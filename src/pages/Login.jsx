@@ -3,14 +3,17 @@ import { useState, useEffect } from 'react';
 import { useTrades } from '../context/TradeContext';
 import { supabase } from '../supabaseClient';
 import { useNavigate } from 'react-router-dom';
-import { Lock, Mail, ChevronRight, LogIn } from 'lucide-react';
+import { Lock, Mail, ChevronRight, LogIn, User } from 'lucide-react';
 import styles from './Login.module.css';
 
 export default function Login() {
     const { user } = useTrades();
     const [loading, setLoading] = useState(false);
+    const [activeTab, setActiveTab] = useState('signin'); // 'signin' or 'signup'
     const [email, setEmail] = useState('');
-    const [sent, setSent] = useState(false);
+    const [fullName, setFullName] = useState('');
+    const [password, setPassword] = useState('');
+    const [message, setMessage] = useState('');
     const navigate = useNavigate();
 
     useEffect(() => {
@@ -19,65 +22,132 @@ export default function Login() {
         }
     }, [user, navigate]);
 
-    const handleLogin = async (e) => {
+    const handleAuth = async (e) => {
         e.preventDefault();
+        setLoading(true);
+        setMessage('');
 
         if (!supabase) {
-            alert('Supabase is not configured! Please see README to add API Keys.');
+            alert('Supabase configuration missing.');
+            setLoading(false);
             return;
         }
 
-        setLoading(true);
-        const { error } = await supabase.auth.signInWithOtp({
-            email,
-            options: {
-                emailRedirectTo: window.location.origin
+        try {
+            if (activeTab === 'signup') {
+                const { data, error } = await supabase.auth.signUp({
+                    email,
+                    password,
+                    options: {
+                        data: {
+                            full_name: fullName,
+                        },
+                    },
+                });
+                if (error) throw error;
+                setMessage('Success! Check your email to confirm account.');
+            } else {
+                const { data, error } = await supabase.auth.signInWithPassword({
+                    email,
+                    password,
+                });
+                if (error) throw error;
             }
-        });
-
-        if (error) {
-            alert(error.message);
-        } else {
-            setSent(true);
+        } catch (error) {
+            setMessage(error.message);
+        } finally {
+            setLoading(false);
         }
-        setLoading(false);
     };
 
     return (
-        <div className={styles.loginPage}>
+        <div className={styles.loginContainer}>
             <div className={styles.loginCard}>
-                <div className={styles.iconCircle}>
-                    <Lock size={24} />
+                <div className={styles.brandHeader}>
+                    <div className={styles.logoIcon}>⚡</div>
+                    <h1>TradeJournal</h1>
                 </div>
-                <h2>Welcome Back</h2>
-                <p className={styles.subtitle}>{sent ? 'Check your email for the magic link!' : 'Sign in to sync your trades across devices.'}</p>
 
-                {!sent ? (
-                    <form onSubmit={handleLogin} className={styles.form}>
-                        <div className={styles.inputGroup}>
-                            <Mail size={18} className={styles.inputIcon} />
-                            <input
-                                type="email"
-                                placeholder="name@example.com"
-                                value={email}
-                                onChange={e => setEmail(e.target.value)}
-                                required
-                            />
+                <div className={styles.tabs}>
+                    <button
+                        className={`${styles.tab} ${activeTab === 'signin' ? styles.activeTab : ''}`}
+                        onClick={() => { setActiveTab('signin'); setMessage(''); }}
+                    >
+                        Sign In
+                    </button>
+                    <button
+                        className={`${styles.tab} ${activeTab === 'signup' ? styles.activeTab : ''}`}
+                        onClick={() => { setActiveTab('signup'); setMessage(''); }}
+                    >
+                        Create Account
+                    </button>
+                </div>
+
+                <div className={styles.cardContent}>
+                    <h2>{activeTab === 'signin' ? 'Welcome Back' : 'Get Started'}</h2>
+                    <p className={styles.subtitle}>
+                        {activeTab === 'signin'
+                            ? 'Enter your credentials to access your journal.'
+                            : 'Create a new account to start tracking trades.'}
+                    </p>
+
+                    {message && (
+                        <div className={`${styles.alert} ${message.includes('Success') ? styles.success : styles.error}`}>
+                            {message}
                         </div>
-                        <button type="submit" className={styles.loginBtn} disabled={loading}>
-                            {loading ? 'Sending Link...' : 'Sign In with Magic Link'}
+                    )}
+
+                    <form onSubmit={handleAuth} className={styles.form}>
+                        {activeTab === 'signup' && (
+                            <div className={styles.inputGroup}>
+                                <label>Full Name</label>
+                                <div className={styles.inputWrapper}>
+                                    <User size={18} className={styles.inputIcon} />
+                                    <input
+                                        type="text"
+                                        placeholder="John Doe"
+                                        value={fullName}
+                                        onChange={e => setFullName(e.target.value)}
+                                        required
+                                    />
+                                </div>
+                            </div>
+                        )}
+
+                        <div className={styles.inputGroup}>
+                            <label>Email Address</label>
+                            <div className={styles.inputWrapper}>
+                                <Mail size={18} className={styles.inputIcon} />
+                                <input
+                                    type="email"
+                                    placeholder="you@example.com"
+                                    value={email}
+                                    onChange={e => setEmail(e.target.value)}
+                                    required
+                                />
+                            </div>
+                        </div>
+
+                        <div className={styles.inputGroup}>
+                            <label>Password</label>
+                            <div className={styles.inputWrapper}>
+                                <Lock size={18} className={styles.inputIcon} />
+                                <input
+                                    type="password"
+                                    placeholder="••••••••"
+                                    value={password}
+                                    onChange={e => setPassword(e.target.value)}
+                                    required
+                                    minLength={6}
+                                />
+                            </div>
+                        </div>
+
+                        <button type="submit" className={styles.submitBtn} disabled={loading}>
+                            {loading ? <div className={styles.spinner}></div> : (activeTab === 'signin' ? 'Sign In' : 'Create Account')}
                             {!loading && <ChevronRight size={18} />}
                         </button>
                     </form>
-                ) : (
-                    <div className={styles.sentMessage}>
-                        <p>We've sent a magic login link to <strong>{email}</strong>.</p>
-                        <button className={styles.btnSecondary} onClick={() => setSent(false)}>Try different email</button>
-                    </div>
-                )}
-
-                <div className={styles.footer}>
-                    <p>Don't have an account? It will be created automatically.</p>
                 </div>
             </div>
         </div>

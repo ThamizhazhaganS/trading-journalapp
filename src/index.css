@@ -5,17 +5,40 @@
   --text-primary: #ededed;
   --text-secondary: #9ca3af;
   --accent-primary: #2563eb;
+  --accent-secondary: #3b82f6;
   --accent-glow: rgba(37, 99, 235, 0.3);
   --success: #10b981;
   --success-glow: rgba(16, 185, 129, 0.2);
   --danger: #ef4444;
   --danger-glow: rgba(239, 68, 68, 0.2);
   --border: #2d313a;
+  --bg-nav: #0f1115;
+  --bg-header: rgba(18, 18, 18, 0.85);
+  --glass-bg: rgba(15, 17, 21, 0.8);
+  --bg-row: rgba(255, 255, 255, 0.02);
 
   --font-family: 'Inter', system-ui, -apple-system, sans-serif;
   --radius-sm: 8px;
   --radius-md: 12px;
   --radius-lg: 20px;
+}
+
+[data-theme='light'] {
+  --bg-app: #f8fafc;
+  --bg-card: #ffffff;
+  --bg-card-hover: #f1f5f9;
+  --text-primary: #1e293b;
+  --text-secondary: #64748b;
+  --accent-primary: #2563eb;
+  --accent-secondary: #1d4ed8;
+  --accent-glow: rgba(37, 99, 235, 0.1);
+  --success: #059669;
+  --danger: #dc2626;
+  --border: #e2e8f0;
+  --bg-nav: #ffffff;
+  --bg-header: rgba(255, 255, 255, 0.8);
+  --glass-bg: rgba(255, 255, 255, 0.85);
+  --bg-row: #f8fafc;
 }
 
 * {
