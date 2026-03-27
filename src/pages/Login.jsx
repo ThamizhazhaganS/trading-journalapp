@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { useTrades } from '../context/TradeContext';
 import { supabase } from '../supabaseClient';
 import { useNavigate } from 'react-router-dom';
-import { Lock, Mail, ChevronRight, LogIn, User } from 'lucide-react';
+import { Lock, Mail, ChevronRight, LogIn, User, Play } from 'lucide-react';
 import styles from './Login.module.css';
 
 export default function Login() {
@@ -55,6 +55,29 @@ export default function Login() {
             }
         } catch (error) {
             setMessage(error.message);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleDemoLogin = async () => {
+        setLoading(true);
+        setMessage('');
+
+        if (!supabase) {
+            alert('Supabase configuration missing.');
+            setLoading(false);
+            return;
+        }
+
+        try {
+            const { data, error } = await supabase.auth.signInWithPassword({
+                email: 'demo@tradejournal.app',
+                password: 'demo123',
+            });
+            if (error) throw error;
+        } catch (error) {
+            setMessage('Demo account error: ' + error.message);
         } finally {
             setLoading(false);
         }
@@ -148,6 +171,17 @@ export default function Login() {
                             {!loading && <ChevronRight size={18} />}
                         </button>
                     </form>
+
+                    <div className={styles.divider}>or</div>
+
+                    <button 
+                        className={styles.demoBtn} 
+                        onClick={handleDemoLogin}
+                        disabled={loading}
+                    >
+                        <Play size={18} />
+                        Try Demo Account
+                    </button>
                 </div>
             </div>
         </div>

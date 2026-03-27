@@ -1,4 +1,4 @@
-
+https://trading-journalapp.vercel.app/
 import { useState, useEffect, useRef } from 'react';
 import { useTrades } from '../context/TradeContext';
 import { Settings, Target, Shield, AlertCircle, TrendingUp, TrendingDown, Maximize2 } from 'lucide-react';

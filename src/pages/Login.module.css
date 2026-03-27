@@ -216,3 +216,54 @@
         transform: rotate(360deg);
     }
 }
+
+.divider {
+    display: flex;
+    align-items: center;
+    text-align: center;
+    color: var(--text-muted);
+    font-size: 0.8rem;
+    margin: 1rem 0;
+}
+
+.divider::before,
+.divider::after {
+    content: '';
+    flex: 1;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.divider::not(:empty)::before {
+    margin-right: .5em;
+}
+
+.divider::not(:empty)::after {
+    margin-left: .5em;
+}
+
+.demoBtn {
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--text-primary);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    padding: 0.9rem;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 0.95rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    transition: all 0.3s;
+    width: 100%;
+}
+
+.demoBtn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.2);
+}
+
+.demoBtn:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+}
